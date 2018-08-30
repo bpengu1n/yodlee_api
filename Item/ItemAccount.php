@@ -11,6 +11,11 @@ class Item_ItemAccount
 		$this->_acctData = $data;
 	}
 	
+	public function getItemAccountId()
+	{
+		return $this->_acctData->itemAccountId;
+	}
+	
 	// Returns accountNumber as string
 	public function getAccountType()
 	{
@@ -100,6 +105,13 @@ class Item_ItemAccount
 	{
 		if (isset($this->_acctData->apr))
 			return $this->_acctData->apr;
+		else
+			return false;
+	}
+	public function getLastUpdated()
+	{
+		if (isset($this->_acctData->lastUpdated) && $this->_acctData->lastUpdated > 0)
+			return $this->_acctData->lastUpdated;
 		else
 			return false;
 	}

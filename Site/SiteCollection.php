@@ -18,7 +18,8 @@ class Site_SiteCollection
 	
 	public function getNextSite()
 	{
-		if($this->_siteCounter == sizeof($this->_sitesData))
+		if($this->_siteCounter == sizeof($this->_sitesData) ||
+			!is_array($this->_sitesData))
 			return false;		// Reached the end of found sites
 		else
 			return new Site_Site($this->_sitesData[$this->_siteCounter++]);

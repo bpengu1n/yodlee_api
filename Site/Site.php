@@ -77,11 +77,10 @@ class Site_Site
 			throw new Exception('Error Adding Site: '.$this->_context->Error[0]->errorDetail);
 		else
 		{
-			echo "BEGIN";
 			// MFAOBJECT
 			//	mfaType - typeId:
 			//		4 - SECURITY_QUESTION
-			print_r($this->_addResponse);
+			//print_r($this->_addResponse);
 			//echo "\n<br />";
 			if(isset($this->_addResponse->siteRefreshInfo))
 				$this->_refreshMan = new Site_SiteRefreshManager($this->_addResponse->siteRefreshInfo);
@@ -91,14 +90,14 @@ class Site_Site
 //			if (true)
 //			{
 				// MFA REFRESH FLOW
-				$mfaResp = $this->_refreshMan->getMfaResponse($cobToken, $usrToken, $this->getMemSiteAccId());
-				echo "RESP: ";
 				
-				print_r($mfaResp);
+				//echo "RESP: ";
 				
-				$this->_save();
+				//print_r($mfaResp);
 				
-				return $mfaResp;
+				//$this->_save();
+				
+				//return $mfaResp;
 //			}
 //			else 
 //			{
@@ -110,8 +109,12 @@ class Site_Site
 	}
 	
 	// Handles removal of site
-	public function remove($cobToken, $usrToken)
+	public function remove()
 	{
+		global $cobrand, $user;
+		$cobToken = $cobrand->getSessionToken();
+		$usrToken = $user->getSessionToken();
+		
 		if(!$this->getMemSiteAccId())
 			return false;
 		else
@@ -133,7 +136,7 @@ class Site_Site
 			
 			$this->_addResponse = null;
 			$this->_refreshMan = null;
-			
+
 			return $resp;
 		}
 	}
@@ -164,6 +167,33 @@ class Site_Site
 			return $this->_refreshMan->isMessageAvailable();
 		else
 			return false;
+	}
+	
+	public function doMfaRequest($cobToken, $usrToken)
+	{	
+		global $ERR_CODES;
+				
+		
+		$this->_refreshMan->startSiteRefresh($cobToken, $usrToken, $this->getMemSiteAccId(), 1, true);
+		
+		// putMfaRequest if MFA data found in POST
+		if (isset($_POST['memSiteAccId']))
+		{
+			$this->putMfaRequest();
+		}
+		$mfaResp = $this->_refreshMan->getMfaResponse($cobToken, $usrToken, $this->getMemSiteAccId());
+		
+		// Check for error here
+		if (isset($mfaResp->errorCode) && $mfaResp->errorCode > 0)
+		{
+			$this->_refreshMan->stopSiteRefresh($this->getMemSiteAccId());
+			$this->remove();
+			throw new Exception('MFA Authentication Error: '.$ERR_CODES[$mfaResp->errorCode]);
+		}
+		
+		
+		
+		return $mfaResp;
 	}
 	
 	// Private class members

@@ -78,15 +78,17 @@ class Site_SiteRefreshManager
 			return $resp;
 	}
 	
-	public function stopSiteRefresh($cobToken, $usrToken, $acctId)
+	public function stopSiteRefresh($acctId)
 	{
+		global $cobrand, $user;
+		
 		$apiUrl = "/Refresh/stopSiteRefresh";
 		
 		$data = array(
-					'cobSessionToken'	=>	$cobToken,
-					'userSessionToken'	=>	$usrToken,
+					'cobSessionToken'	=>	$cobrand->getSessionToken(),
+					'userSessionToken'	=>	$user->getSessionToken(),
 					'memSiteAccId'		=>	$acctId,
-					'reason'    		=>	105
+					'reason'    		=>	101
 				);
 
 		$restClient = new Rest_Client(EXTD_SERVER_URL.$apiUrl);
@@ -94,7 +96,6 @@ class Site_SiteRefreshManager
 		$restClient->doCall($data);
 
 		$resp = $restClient->getResponseObj();
-		
 		
 		if (isset($resp->Error))
 			throw new Exception('Error In Refresh Stop: '.$this->_context->Error[0]->errorDetail);
@@ -127,7 +128,7 @@ class Site_SiteRefreshManager
 				throw new Exception('Error In Refresh Response: '.$this->_context->Error[0]->errorDetail);
 			else
 			{
-				if ($resp->retry != 1)
+				if (!isset($resp->retry) || $resp->retry != 1)
 					$retry = false;
 			}
 		}
@@ -161,8 +162,8 @@ class Site_SiteRefreshManager
 			$count++;
 		}
 		
-		
-		print_r($data);
+		if (isset($_GET['debug']))
+			print_r($data);
 		
 		$restClient = new Rest_Client(EXTD_SERVER_URL.$apiUrl);
 
@@ -171,9 +172,7 @@ class Site_SiteRefreshManager
 		$resp = $restClient->getResponseObj();
 		
 		$this->_lastMfaResponse = $resp;
-		echo "<!-- ";
-		print_r($resp);
-		echo "--!>";
+
 		return $resp;
 	}
 	
@@ -181,6 +180,16 @@ class Site_SiteRefreshManager
 	{
 		if (isset($this->_lastMfaResponse->isMessageAvailable) && 
 			$this->_lastMfaResponse->isMessageAvailable == 1)
+			return true;
+		else
+			return false;
+	}
+	
+	// Certain situations cause the MFA flow to get stuck, in a timeout, etc.
+	//	This method will return true in those situations so the site can be reset.
+	public function doReset()
+	{
+		if ($_siteRefreshInfo->suggestedFlow->suggestedFlow == "EDIT")
 			return true;
 		else
 			return false;

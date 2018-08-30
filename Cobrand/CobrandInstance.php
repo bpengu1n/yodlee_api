@@ -17,8 +17,10 @@ class Cobrand_CobrandInstance
 		$this->_timeout = COBRAND_TIMEOUT;
 		$this->_lastCreated = 0; // Force initial login
 
-		$this->_apiPath = 'authenticate/coblogin';
+		$this->_apiPath = '/authenticate/coblogin';
 		$this->_loadLoginInfo();
+		
+		$this->_save();
 	}
 	// Reimplementation of getContext with
 	//	context aging implemented
@@ -38,8 +40,8 @@ class Cobrand_CobrandInstance
 	private function _login()
 	{
 		$data = array(
-				'cobrandLogin' => urlencode($this->_username),
-				'cobrandPassword' => urlencode($this->_password)
+				'cobrandLogin' => $this->_username,
+				'cobrandPassword' => $this->_password
 			);
 		$restClient = new Rest_Client($this->_serverUrl.$this->_apiPath);
 
@@ -50,7 +52,11 @@ class Cobrand_CobrandInstance
 		if (isset($this->_context->Error))
 			throw new Exception('Error Authenticating Cobrand: '.$this->_context->Error[0]->errorDetail);
 		else
+		{
 			$this->_lastCreated = intval(microtime(true));
+			
+			$this->_save();
+		}
 	}
 
 	private function _loadLoginInfo()
@@ -59,7 +65,12 @@ class Cobrand_CobrandInstance
 		$this->_appId 		= COBRAND_APP_ID;
 		$this->_username 	= COBRAND_USER;
 		$this->_password 	= COBRAND_PASSWORD;
-		$this->_serverUrl	= REST_SERVER_URL;
+		$this->_serverUrl	= BASE_SERVER_URL;
+	}
+	
+	private function _save()
+	{
+		$_SESSION['CobrandInstance'] 	= serialize($this);
 	}
 
 	// Prevent cloning of the instance

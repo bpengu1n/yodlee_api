@@ -14,13 +14,47 @@ class Item_Item
 	
 	public function getId()
 	{
-		return $this->_itemData->siteId;
+		return $this->_itemData->itemId;
+	}
+	
+	public function getMemSiteAccId()
+	{
+		if (isset($this->_itemData->memSiteAccId))
+			return $this->_itemData->memSiteAccId;
+		else
+			return false;
 	}
 	
 	public function getItemName()
 	{ 
 		if (is_object($this->_itemData))
 			return $this->_itemData->itemDisplayName;
+	}
+	
+	public function getAllTransactions($acctId, $fromDate, $toDate)
+	{
+		$ts = new Transaction_TransactionSearch();
+		// Initial search parameters for full transaction retrieval
+		$startNum = 1;
+		$endNum = 500;
+		
+		$transColl = $ts->doSearchRequest($acctId, $fromDate, $toDate);
+		
+		$count = floor($transColl->getAllTransCount()/500)+1;
+		
+		
+		for ($tsIter = 1; $tsIter < $count; $tsIter++)
+		{
+			// Increment parameters
+			$startNum += 500; 
+			$endNum += 500;
+			
+			// Append next page of transactions
+			$transColl[] = $ts->continueSearchRequest($startNum, $endNum);
+		}
+
+		//  return HANDLED_$TRANS
+		return $transColl;
 	}
 	
 	public function getAllAccounts()
